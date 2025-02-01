@@ -131,3 +131,5 @@ dist
 
 # postgres data
 postgres_data/
+
+requests/
