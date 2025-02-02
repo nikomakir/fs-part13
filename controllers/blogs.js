@@ -1,25 +1,33 @@
 const router = require('express').Router()
 
-const { Blog } = require('../models')
+const { tokenExtractor, blogFinder } = require('../util/middleware')
 
-const blogFinder = async (req, res, next) => {
-  req.blog = await Blog.findByPk(req.params.id)
-  next()
-}
+const { Blog, User } = require('../models')
 
 router.get('/', async (req, res) => {
-  const blogs = await Blog.findAll()
+  const blogs = await Blog.findAll({
+    attributes: { exclude: ['userId'] },
+    include: {
+      model: User,
+      attributes: ['name']
+    }
+  })
   res.json(blogs)
 })
 
-router.post('/', async (req, res) => {
-  const blog = await Blog.create(req.body)
+router.post('/', tokenExtractor, async (req, res) => {
+  const user = await User.findByPk(req.decodedToken.id)
+  const blog = await Blog.create({ ...req.body, userId: user.id })
   res.json(blog)
 })
 
-router.delete('/:id', blogFinder, async (req, res) => {
-  await req.blog.destroy()
-  res.status(204).end()
+router.delete('/:id', tokenExtractor, blogFinder, async (req, res) => {
+  if (req.blog.userId === req.decodedToken.id) {
+    await req.blog.destroy()
+    res.status(204).end()
+  } else {
+    res.status(401).json({ error: 'User and blog do not match!' })
+  }
 })
 
 router.put('/:id', blogFinder, async (req, res) => {
