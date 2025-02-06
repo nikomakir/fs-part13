@@ -2,7 +2,7 @@ const router = require('express').Router()
 
 const { ReadingList } = require('../models')
 
-const { tokenExtractor } = require('../util/middleware')
+const { tokenExtractor, validateUser } = require('../util/middleware')
 
 router.post('/', async (req, res) => {
   const body = req.body
@@ -13,7 +13,7 @@ router.post('/', async (req, res) => {
   res.status(201).end()
 })
 
-router.put('/:id', tokenExtractor, async (req, res) => {
+router.put('/:id', tokenExtractor, validateUser, async (req, res) => {
   const entry = await ReadingList.findByPk(req.params.id)
   
   if (entry.userId === req.decodedToken.id) {
